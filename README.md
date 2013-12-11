@@ -5,7 +5,7 @@ eigenen Anwendungen nutzen will, um Dinge™ anzuzeigen - ein eigener
 Abfahrtsmonitor wird so z.B. möglich.
 
 ## Technische Details
-Aus [http://ivu.aseag.de/interfaces/ura/instant_V1] fällt JSON raus. Wenn
+[Hier](http://ivu.aseag.de/interfaces/ura/instant_V1) fällt JSON raus. Wenn
 man die richtigen Parameter angibt, sogar mit mehr Informationen und nicht
 so ganz kaputt.
 
