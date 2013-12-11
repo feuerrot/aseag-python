@@ -36,5 +36,5 @@ for line in info:
 		ausgabe.append(formatinput)
 ausgabe.sort(key=lambda tup: tup[0])
 for elem in ausgabe:
-	print("%s %s %s" % (tstodate(elem[0]), elem[1], elem[2]))
+	print("%s %s %s" % (tstotime(elem[0]), elem[1], elem[2]))
 #print(ausgabe)
