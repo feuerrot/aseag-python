@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import json
 import http.client
 import datetime
@@ -31,10 +30,14 @@ ausgabe = []
 
 for line in info:
 	linearray = json.loads(line.decode(encoding))
+
+	#Es ist nur eine Fahrplaninfo, wenn das erste Feld 0 ist
 	if (linearray[0] == 1):
+		# 21 = Zeit, 13 = Busnummer, 16 = Ziel
 		formatinput = (linearray[21], linearray[13], linearray[16])
 		ausgabe.append(formatinput)
+
+#Sortierung nach der Zeit
 ausgabe.sort(key=lambda tup: tup[0])
 for elem in ausgabe:
 	print("%s %s %s" % (tstotime(elem[0]), elem[1], elem[2]))
-#print(ausgabe)
