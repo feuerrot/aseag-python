@@ -2,6 +2,7 @@
 import json
 import http.client
 import datetime
+import sys
 
 def tstodate(ts):
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
@@ -16,10 +17,15 @@ baseurl_instant	= "/interfaces/ura/instant_V1"
 url_filter	= "?ReturnList=StopPointName,StopID,StopCode1,StopCode2,StopPointState,StopPointType,StopPointIndicator,Towards,Bearing,Latitude,Longitude,VisitNumber,TripID,VehicleID,RegistrationNumber,LineID,LineName,DirectionID,DestinationText,DestinationName,EstimatedTime,MessageUUID,MessageText,MessageType,MessagePriority,BaseVersion"
 url_filter_stop	= "&StopID="
 
+try:
+	haltestelle = sys.argv[1]
+except:
+	haltestelle = "100111"
+
 jsondecoder = json.JSONDecoder()
 
 connection = http.client.HTTPConnection(baseurl)
-connection.request("GET", baseurl_instant + url_filter + url_filter_stop + "100625")
+connection.request("GET", baseurl_instant + url_filter + url_filter_stop + haltestelle)
 
 response = connection.getresponse()
 encoding = response.headers.get_content_charset()
