@@ -22,6 +22,11 @@ try:
 except:
 	haltestelle = "100111"
 
+try:
+	busfilter = sys.argv[2]
+except:
+	busfilter = None
+
 jsondecoder = json.JSONDecoder()
 
 connection = http.client.HTTPConnection(baseurl)
@@ -46,4 +51,5 @@ for line in info:
 #Sortierung nach der Zeit
 ausgabe.sort(key=lambda tup: tup[0])
 for elem in ausgabe:
-	print("%s %s %s" % (tstotime(elem[0]), elem[1], elem[2]))
+	if (busfilter == None or busfilter == elem[1]):
+		print("%s %s %s" % (tstotime(elem[0]), elem[1], elem[2]))
