@@ -4,6 +4,7 @@ import http.client
 import datetime
 import sys
 import pickle
+import os
 
 def tstodate(ts):
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
@@ -11,7 +12,7 @@ def tstodate(ts):
 def tstotime(ts):
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%H:%M:%S')
 
-haltestellenfile= open("haltestellen.pickle",'rb')
+haltestellenfile= open(os.path.dirname(os.path.realpath(__file__)) + "/haltestellen.pickle",'rb')
 baseurl		= "ivu.aseag.de"
 baseurl_stream	= "/interfaces/ura/stream_V1"
 baseurl_instant	= "/interfaces/ura/instant_V1"
