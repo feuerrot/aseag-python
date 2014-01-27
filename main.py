@@ -3,6 +3,7 @@ import json
 import http.client
 import datetime
 import sys
+import pickle
 
 def tstodate(ts):
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
@@ -10,15 +11,21 @@ def tstodate(ts):
 def tstotime(ts):
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%H:%M:%S')
 
-
+haltestellenfile= open("haltestellen.pickle",'rb')
 baseurl		= "ivu.aseag.de"
 baseurl_stream	= "/interfaces/ura/stream_V1"
 baseurl_instant	= "/interfaces/ura/instant_V1"
 url_filter	= "?ReturnList=StopPointName,StopID,StopCode1,StopCode2,StopPointState,StopPointType,StopPointIndicator,Towards,Bearing,Latitude,Longitude,VisitNumber,TripID,VehicleID,RegistrationNumber,LineID,LineName,DirectionID,DestinationText,DestinationName,EstimatedTime,MessageUUID,MessageText,MessageType,MessagePriority,BaseVersion"
 url_filter_stop	= "&StopID="
 
+haltestellen = pickle.load(haltestellenfile)
+
 try:
-	haltestelle = sys.argv[1]
+	tmp = sys.argv[1]
+	if tmp in haltestellen:
+		haltestelle = str(haltestellen[tmp])
+	else:
+		haltestelle = tmp
 except:
 	haltestelle = "100111"
 
