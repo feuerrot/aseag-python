@@ -21,8 +21,6 @@ habe. Das könnte jetzt wenigstens mal was werden, wo ich ein konkretes
 Projekt habe, das ich selber brauche und das ich dann passend bearbeite, um
 so mal Python flüssiger schreiben zu können.
 
-## Darfst du das überhaupt?
-Nein. Zumindest habe ich noch nicht nachgefragt und werde mich
-wahrscheinlich einfach so wie die App verhalten, um die API nicht unnötig
-hart zu belasten. Irgendwann könnte ich dann auch mal nachfragen, ob das in
-Ordnung ist, aber das kommt erst noch.
+## Aktueller Status
+Weitgehend tot, zuckt aber noch etwas. Könnte in der vorlesungsfreien Zeit
+etwas werden.
