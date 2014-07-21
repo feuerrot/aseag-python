@@ -20,3 +20,7 @@ Bloß nicht, ansonsten kommt doch raus, dass ich von Python3 keine Ahnung
 habe. Das könnte jetzt wenigstens mal was werden, wo ich ein konkretes
 Projekt habe, das ich selber brauche und das ich dann passend bearbeite, um
 so mal Python flüssiger schreiben zu können.
+
+## Aktueller Status
+Weitgehend tot, zuckt aber noch etwas. Könnte in der vorlesungsfreien Zeit
+etwas werden.
