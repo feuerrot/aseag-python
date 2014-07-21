@@ -28,7 +28,7 @@ try:
 	else:
 		haltestelle = tmp
 except:
-	haltestelle = "100111"
+	haltestelle = "100636"
 
 try:
 	busfilter = sys.argv[2]
