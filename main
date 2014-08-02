@@ -6,7 +6,7 @@ import sys
 import os
 
 DEBUG=False
-defaultstop = "100636"
+defaultstop = 100636
 
 stopfile = os.path.dirname(os.path.realpath(__file__)) + "/stops"
 baseurl  = "ivu.aseag.de"
@@ -15,9 +15,13 @@ url_i    = "/interfaces/ura/instant_V1"
 filter   = "?ReturnList=StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
 filter_s = "&StopID={}"
 filter_l = "&LineID={}"
+usage    = 'Usage: {} [StopID] [BusIDs]'
+infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
+empty    = "Das Problem an dem System, ja, ist das System, ja!"
 
-if len(sys.argv) == 1:
-	print('Usage: {} [Stop] [Bus IDs]'.format(__file__))
+if len(sys.argv) == 1 and defaultstop == 0:
+	print(usage.format(__file__))
+	exit(0)
 
 def tstodate(ts): #timestamp to date
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
@@ -30,7 +34,7 @@ def file2dict(fn): #file(name) to dict
 	with open(fn, 'r') as fh:
 		for line in fh:
 			(number, name) = line.split(' ', 1)
-			rtn[number] = name
+			rtn[int(number)] = name
 	return rtn
 
 def debug(text):
@@ -48,11 +52,11 @@ def parseargv(): #parses argv, returns StopID and LineID
 			if (elem == __file__):
 				continue
 			if (len(elem) == 6 and elem.isdigit()):
-				query_stop = elem
+				query_stop = int(elem)
 			elif (1 <= len(elem) <= 3 and elem.isdigit()):
 				query_ids.append(elem)
 			else:
-				print("Wait, what?: {}".format(elem))
+				print("What's this?: {}".format(elem))
 	query_ids.sort(key=int)
 	return (query_stop, query_ids)
 
@@ -84,10 +88,21 @@ def parsejson(data):
 	output.sort(key=lambda tup: tup[0])
 	return output
 
+def info():
+	(query_stop, query_ids) = parseargv()
+	try:
+		halt = stops[query_stop].strip()
+	except:
+		print("Error: Invalid StopID")
+		exit(1)
+	haltid = query_stop
+	linien = " ".join(query_ids)
+	out = infotext.format(halt, haltid, linien)
+	debug(out)
+
 
 debug('=== Start')
-(query_stop, query_ids) = parseargv()
-debug("Haltestelle:    {}\nHaltestellenID: {}\nLinien:         {}".format(stops[query_stop].strip(),query_stop," ".join(query_ids)))
+info()
 
 debug('=== Get JSON')
 jsondata = getjson()
@@ -96,5 +111,8 @@ debug('=== Parse JSON')
 output = parsejson(jsondata)
 
 debug('=== Output')
+if output == []:
+	debug(empty)
+	exit(2)
 for line in output:
 	print("{} {} {}".format(tstotime(line[0]), line[1], line[2]))
