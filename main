@@ -59,12 +59,12 @@ def parseargv(): #parses argv, returns StopID and LineID
 				global DEBUG
 				DEBUG=True
 			else:
-				print("What's this?: {}".format(elem))
+				print("Unknown parameter {!r}".format(elem))
 	query_ids.sort(key=int)
 	return (query_stop, query_ids)
 
-def getjson():
-	(stop, ids) = parseargv()
+def getjson(data):
+	(stop, ids) = data
 	stop_filter = filter_s.format(stop)
 	if (ids == []):
 		line_filter = ""
@@ -91,24 +91,25 @@ def parsejson(data):
 	output.sort(key=lambda tup: tup[0])
 	return output
 
-def info():
-	(query_stop, query_ids) = parseargv()
+def info(data):
+	(stop, ids) = data
 	try:
-		halt = stops[query_stop].strip()
+		halt = stops[stop].strip()
 	except:
 		print("Error: Invalid StopID")
 		exit(1)
-	haltid = query_stop
-	linien = " ".join(query_ids)
+	haltid = stop
+	linien = " ".join(ids)
 	out = infotext.format(halt, haltid, linien)
 	debug(out)
 
+data = parseargv()
 
 debug('=== Start')
-info()
+info(data)
 
 debug('=== Get JSON')
-jsondata = getjson()
+jsondata = getjson(data)
 
 debug('=== Parse JSON')
 output = parsejson(jsondata)
