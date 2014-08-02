@@ -28,7 +28,9 @@ selbstgebautes Abfahrtsdisplay wäre doch ganz schick!
 ## Aktueller Status
 Zuckt tatsächlich noch, wurde in den letzten paar Stunden leicht
 überarbeitet (aka: Code in Fenster 1 offen, alles in Fenster 2 neu
-schreiben) und könnte schon etwas besser als vorher sein.
+schreiben) und könnte schon etwas besser als vorher sein. Muss allerdings
+noch mindestens zwei Mal genau so neu geschrieben werden, bis es schön
+aussieht.
 
 ## Zukunft
 FPGA + Ethernet + VGA wäre zwar echt nett, aber ich bleibe wahrscheinlich
