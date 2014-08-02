@@ -3,61 +3,98 @@ import json
 import http.client
 import datetime
 import sys
-import pickle
 import os
 
-def tstodate(ts):
+DEBUG=False
+defaultstop = "100636"
+
+stopfile = os.path.dirname(os.path.realpath(__file__)) + "/stops"
+baseurl  = "ivu.aseag.de"
+url_s    = "/interfaces/ura/stream_V1"
+url_i    = "/interfaces/ura/instant_V1"
+filter   = "?ReturnList=StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
+filter_s = "&StopID={}"
+filter_l = "&LineID={}"
+
+if len(sys.argv) == 1:
+	print('Usage: {} [Stop] [Bus IDs]'.format(__file__))
+
+def tstodate(ts): #timestamp to date
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
 
-def tstotime(ts):
+def tstotime(ts): #timestamp to time
 	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%H:%M:%S')
 
-haltestellenfile= open(os.path.dirname(os.path.realpath(__file__)) + "/haltestellen.pickle",'rb')
-baseurl		= "ivu.aseag.de"
-baseurl_stream	= "/interfaces/ura/stream_V1"
-baseurl_instant	= "/interfaces/ura/instant_V1"
-url_filter	= "?ReturnList=StopPointName,StopID,StopCode1,StopCode2,StopPointState,StopPointType,StopPointIndicator,Towards,Bearing,Latitude,Longitude,VisitNumber,TripID,VehicleID,RegistrationNumber,LineID,LineName,DirectionID,DestinationText,DestinationName,EstimatedTime,MessageUUID,MessageText,MessageType,MessagePriority,BaseVersion"
-url_filter_stop	= "&StopID="
+def file2dict(fn): #file(name) to dict
+	rtn = dict()
+	with open(fn, 'r') as fh:
+		for line in fh:
+			(number, name) = line.split(' ', 1)
+			rtn[number] = name
+	return rtn
 
-haltestellen = pickle.load(haltestellenfile)
+def debug(text):
+	if DEBUG:
+		print(text)
 
-try:
-	tmp = sys.argv[1]
-	if tmp in haltestellen:
-		haltestelle = str(haltestellen[tmp])
+stops = file2dict(stopfile)
+
+def parseargv(): #parses argv, returns StopID and LineID
+	query_stop = defaultstop
+	query_ids  = []
+	argc = len(sys.argv)
+	if argc >  1:
+		for elem in sys.argv:
+			if (elem == __file__):
+				continue
+			if (len(elem) == 6 and elem.isdigit()):
+				query_stop = elem
+			elif (1 <= len(elem) <= 3 and elem.isdigit()):
+				query_ids.append(elem)
+			else:
+				print("Wait, what?: {}".format(elem))
+	query_ids.sort(key=int)
+	return (query_stop, query_ids)
+
+def getjson():
+	(stop, ids) = parseargv()
+	stop_filter = filter_s.format(stop)
+	if (ids == []):
+		line_filter = ""
 	else:
-		haltestelle = tmp
-except:
-	haltestelle = "100636"
+		line_filter = filter_l.format(",".join(ids))
+	url = "{}{}{}{}".format(url_i,filter,stop_filter,line_filter)
 
-try:
-	busfilter = sys.argv[2]
-except:
-	busfilter = None
+	connection = http.client.HTTPConnection(baseurl)
+	connection.request("GET", url)
 
-jsondecoder = json.JSONDecoder()
+	response = connection.getresponse()
+	encoding = response.headers.get_content_charset()
+	jsondata = response.read().splitlines()
 
-connection = http.client.HTTPConnection(baseurl)
-connection.request("GET", baseurl_instant + url_filter + url_filter_stop + haltestelle)
+	return (jsondata, encoding)
 
-response = connection.getresponse()
-encoding = response.headers.get_content_charset()
+def parsejson(data):
+	(jsondata, encoding) = data
+	output = []
+	for line in jsondata:
+		linelist = json.loads(line.decode(encoding))
+		if (linelist[0] == 1):
+			output.append((linelist[15],linelist[8],linelist[12]))
+	output.sort(key=lambda tup: tup[0])
+	return output
 
-info = response.read().splitlines()
 
-ausgabe = []
+debug('=== Start')
+(query_stop, query_ids) = parseargv()
+debug("Haltestelle:    {}\nHaltestellenID: {}\nLinien:         {}".format(stops[query_stop].strip(),query_stop," ".join(query_ids)))
 
-for line in info:
-	linearray = json.loads(line.decode(encoding))
+debug('=== Get JSON')
+jsondata = getjson()
 
-	#Es ist nur eine Fahrplaninfo, wenn das erste Feld 0 ist
-	if (linearray[0] == 1):
-		# 21 = Zeit, 13 = Busnummer, 16 = Ziel
-		formatinput = (linearray[21], linearray[13], linearray[16])
-		ausgabe.append(formatinput)
+debug('=== Parse JSON')
+output = parsejson(jsondata)
 
-#Sortierung nach der Zeit
-ausgabe.sort(key=lambda tup: tup[0])
-for elem in ausgabe:
-	if (busfilter == None or busfilter == elem[1]):
-		print("%s %s %s" % (tstotime(elem[0]), elem[1], elem[2]))
+debug('=== Output')
+for line in output:
+	print("{} {} {}".format(tstotime(line[0]), line[1], line[2]))
