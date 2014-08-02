@@ -16,7 +16,7 @@ Niemals. Höchstens zurechtgebasteltes, was hauptsächlich meinen
 Anforderungen entspricht. Immerhin gibt es sogar eine Anleitung, wenn man
 das Script ohne Argumente aufruft:
 ```
-Usage: ./main [Stop] [Bus IDs]
+Usage: ./main [StopID] [BusIDs]
 ```
 Dazu kommt dann noch die Ausgabe von der Defaulthaltestelle - aber das wird
 noch.
