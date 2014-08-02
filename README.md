@@ -6,21 +6,31 @@ Abfahrtsmonitor wird so z.B. möglich.
 
 ## Technische Details
 [Hier](http://ivu.aseag.de/interfaces/ura/instant_V1) fällt JSON raus. Wenn
-man die richtigen Parameter angibt, sogar mit mehr Informationen und nicht
-so ganz kaputt.
+man einfach die API-Dokumentation von [Transport for
+London](http://www.tfl.gov.uk/cdn/static/cms/documents/tfl-live-bus-and-river-bus-arrivals-api-documentation.pdf)
+nimmt, hat man eine ganz gute Anleitung, was man mit so einer
+URA-Schnittstelle anfangen kann.
 
 ## Wann gibt es interessantes?
-Spätestens in >9000 Jahren. Ernsthaft, ich hacke das wahrscheinlich nur so
-zurecht, dass es zu meinem Anwendungsfall passt und lasse das dann
-rumliegen - wenn das auf Github rumliegt und sich jemand dafür
-interessiert, dann findet sich schon wer, der forkt.
+Niemals. Höchstens zurechtgebasteltes, was hauptsächlich meinen
+Anforderungen entspricht. Immerhin gibt es sogar eine Anleitung, wenn man
+das Script ohne Argumente aufruft:
+```
+Usage: ./main [Stop] [Bus IDs]
+```
+Dazu kommt dann noch die Ausgabe von der Defaulthaltestelle - aber das wird
+noch.
 
 ## Mitmachen
-Bloß nicht, ansonsten kommt doch raus, dass ich von Python3 keine Ahnung
-habe. Das könnte jetzt wenigstens mal was werden, wo ich ein konkretes
-Projekt habe, das ich selber brauche und das ich dann passend bearbeite, um
-so mal Python flüssiger schreiben zu können.
+Ja, tu es! Ich sehe auch gerne noch andere Anwendungen hierfür - so ein
+selbstgebautes Abfahrtsdisplay wäre doch ganz schick!
 
 ## Aktueller Status
-Weitgehend tot, zuckt aber noch etwas. Könnte in der vorlesungsfreien Zeit
-etwas werden.
+Zuckt tatsächlich noch, wurde in den letzten paar Stunden leicht
+überarbeitet (aka: Code in Fenster 1 offen, alles in Fenster 2 neu
+schreiben) und könnte schon etwas besser als vorher sein.
+
+## Zukunft
+FPGA + Ethernet + VGA wäre zwar echt nett, aber ich bleibe wahrscheinlich
+bei 'nem Raspberry oder dergleichen mit einem Monitor dazu, das kann ich
+wenigstens. Frühestens zu sehen in zu langer Zeit…
