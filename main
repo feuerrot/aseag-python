@@ -119,4 +119,4 @@ if output == []:
 	debug(empty)
 	exit(2)
 for line in output:
-	print("{} {} {}".format(tstotime(line[0]), line[1], line[2]))
+	print("{} {:>3} {}".format(tstotime(line[0]), line[1], line[2]))
