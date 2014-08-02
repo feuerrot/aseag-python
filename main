@@ -55,6 +55,9 @@ def parseargv(): #parses argv, returns StopID and LineID
 				query_stop = int(elem)
 			elif (1 <= len(elem) <= 3 and elem.isdigit()):
 				query_ids.append(elem)
+			elif elem == 'debug':
+				global DEBUG
+				DEBUG=True
 			else:
 				print("What's this?: {}".format(elem))
 	query_ids.sort(key=int)
