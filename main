@@ -23,11 +23,17 @@ if len(sys.argv) == 1 and defaultstop == 0:
 	print(usage.format(__file__))
 	exit(0)
 
+def tstodatetime(ts):
+	return datetime.datetime.fromtimestamp(ts*(10**(-3)))
+
 def tstodate(ts): #timestamp to date
-	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%Y-%m-%d %H:%M:%S')
+	return tstodatetime(ts).strftime('%Y-%m-%d %H:%M:%S')
 
 def tstotime(ts): #timestamp to time
-	return datetime.datetime.fromtimestamp(ts*(10**(-3))).strftime('%H:%M:%S')
+	return tstodatetime(ts).strftime('%H:%M:%S')
+
+def tsfilter(ts):
+	return tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)
 
 def file2dict(fn): #file(name) to dict
 	rtn = dict()
@@ -119,4 +125,5 @@ if output == []:
 	debug(empty)
 	exit(2)
 for line in output:
-	print("{} {:>3} {}".format(tstotime(line[0]), line[1], line[2]))
+	if tsfilter(line[0]):
+		print("{} {:>3} {}".format(tstotime(line[0]), line[1], line[2]))
