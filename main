@@ -15,7 +15,7 @@ url_i    = "/interfaces/ura/instant_V1"
 filter   = "?ReturnList=StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
 filter_s = "&StopID={}"
 filter_l = "&LineID={}"
-usage    = 'Usage: {} [StopID] [BusIDs]'
+usage    = 'Usage: {} [Stop] [BusIDs]'
 infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 empty    = "Das Problem an dem System, ja, ist das System, ja!"
 
@@ -40,7 +40,7 @@ def file2dict(fn): #file(name) to dict
 	with open(fn, 'r') as fh:
 		for line in fh:
 			(number, name) = line.split(' ', 1)
-			rtn[int(number)] = name
+			rtn[int(number)] = name.strip()
 	return rtn
 
 def debug(text):
@@ -48,6 +48,26 @@ def debug(text):
 		print(text)
 
 stops = file2dict(stopfile)
+
+def lookup_stop_by_name(name):
+	found = []
+	for elem in stops.items():
+		if DEBUG:
+			print(elem)
+		if name in elem[1]:
+			found.append(elem)
+	if DEBUG:
+		print(found)
+	if len(found) == 1:
+		return found[0][0]
+	elif len(found) == 0:
+		print("{} is not a valid stop name".format(name))
+		exit(3)
+	else:
+		print("Found more than one match:")
+		for i in found:
+			print("{}".format(i[1]))
+		exit(4)
 
 def parseargv(): #parses argv, returns StopID and LineID
 	query_stop = defaultstop
@@ -59,11 +79,13 @@ def parseargv(): #parses argv, returns StopID and LineID
 				continue
 			if (len(elem) == 6 and elem.isdigit()):
 				query_stop = int(elem)
-			elif (1 <= len(elem) <= 3 and elem.isdigit()):
-				query_ids.append(elem)
 			elif elem == 'debug':
 				global DEBUG
 				DEBUG=True
+			elif elem.isprintable():
+				query_stop = lookup_stop_by_name(elem)
+			elif (1 <= len(elem) <= 3 and elem.isdigit()):
+				query_ids.append(elem)
 			else:
 				print("Unknown parameter {!r}".format(elem))
 	query_ids.sort(key=int)
