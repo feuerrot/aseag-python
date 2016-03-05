@@ -79,13 +79,13 @@ def parseargv(): #parses argv, returns StopID and LineID
 				continue
 			if (len(elem) == 6 and elem.isdigit()):
 				query_stop = int(elem)
+			elif (1 <= len(elem) <= 3 and elem.isdigit()):
+				query_ids.append(elem)
 			elif elem == 'debug':
 				global DEBUG
 				DEBUG=True
 			elif elem.isprintable():
 				query_stop = lookup_stop_by_name(elem)
-			elif (1 <= len(elem) <= 3 and elem.isdigit()):
-				query_ids.append(elem)
 			else:
 				print("Unknown parameter {!r}".format(elem))
 	query_ids.sort(key=int)
