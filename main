@@ -54,7 +54,8 @@ def lookup_stop_by_name(name):
 	for elem in stops.items():
 		if DEBUG:
 			print(elem)
-		if name in elem[1]:
+			print(elem[1])
+		if name.lower() in elem[1].lower():
 			found.append(elem)
 	if DEBUG:
 		print(found)
