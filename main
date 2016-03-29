@@ -19,6 +19,8 @@ usage    = 'Usage: {} [Stop] [BusIDs]'
 infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 empty    = "Das Problem an dem System, ja, ist das System, ja!"
 
+totime   = 0
+
 if len(sys.argv) == 1 and defaultstop == 0:
 	print(usage.format(__file__))
 	exit(0)
@@ -32,8 +34,11 @@ def tstodate(ts): #timestamp to date
 def tstotime(ts): #timestamp to time
 	return tstodatetime(ts).strftime('%H:%M:%S')
 
-def tsfilter(ts):
-	return tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)
+def tsfilter(ts): # Todo: schöner machen
+	if totime == 0:
+		return (tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5))
+	else:
+		return (tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)) and (tstodatetime(ts) <= datetime.datetime.now() + datetime.timedelta(minutes = totime))
 
 def file2dict(fn): #file(name) to dict
 	rtn = dict()
@@ -84,6 +89,12 @@ def parseargv(): #parses argv, returns StopID and LineID
 			elif elem == 'debug':
 				global DEBUG
 				DEBUG=True
+			elif elem[0] == '+':
+				global totime
+				try:
+					totime = int(elem[1:])
+				except:
+					pass
 			elif elem.isprintable():
 				query_stop = lookup_stop_by_name(elem)
 			else:
@@ -102,7 +113,11 @@ def getjson(data):
 	debug("URL: {}{}".format(baseurl, url))
 
 	connection = http.client.HTTPConnection(baseurl)
-	connection.request("GET", url)
+	try:
+		connection.request("GET", url)
+	except socket.gaierror:
+		print("Can't connect to {}!".format(url))
+		exit(1)
 
 	response = connection.getresponse()
 	encoding = response.headers.get_content_charset()
