@@ -15,7 +15,7 @@ url_i    = "/interfaces/ura/instant_V1"
 filter   = "?ReturnList=StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
 filter_s = "&StopID={}"
 filter_l = "&LineID={}"
-usage    = 'Usage: {} [Stop] [BusIDs]'
+usage    = 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
 infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 empty    = "Das Problem an dem System, ja, ist das System, ja!"
 
@@ -82,6 +82,9 @@ def parseargv(): #parses argv, returns StopID and LineID
 		for elem in sys.argv:
 			if (elem == __file__):
 				continue
+			if ('help' in elem or elem == '-h'):
+				print(usage)
+				exit(0)
 			if (len(elem) == 6 and elem.isdigit()):
 				query_stop = int(elem)
 			elif (1 <= len(elem) <= 3 and elem.isdigit()):
