@@ -71,7 +71,7 @@ def lookup_stop_by_name(name):
 	else:
 		print("Found more than one match:")
 		for i in found:
-			print("{}".format(i[1]))
+			print("{} {}".format(i[0], i[1]))
 		exit(4)
 
 def parseargv(): #parses argv, returns StopID and LineID
