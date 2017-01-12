@@ -1,26 +1,43 @@
 #!/usr/bin/env python3
-import json
-import http.client
 import datetime
 import sys
 import os
+import requests
 
 DEBUG=False
 defaultstop = 100636
 
-stopfile = os.path.dirname(os.path.realpath(__file__)) + "/stops"
-baseurl  = "ivu.aseag.de"
-url_s    = "/interfaces/ura/stream_V1"
-url_i    = "/interfaces/ura/instant_V1"
-filter   = "?ReturnList=StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
-filter_s = "&StopID={}"
-filter_l = "&LineID={}"
+baseurl  = "http://ivu.aseag.de/interfaces/ura/{}"
+url_l    = "location"
+url_j    = "journey"
 usage    = 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
 infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 empty    = "Das Problem an dem System, ja, ist das System, ja!"
 
 totime   = 0
 
+def get_stoppoint(name):
+	parameter = {'searchString': name, 'maxResults': 10, 'searchTypes': 'STOPPOINT'}
+	request = requests.get(baseurl.format(url_l), params=parameter)
+	if request.status_code != 200:
+		raise Exception
+	if request.headers['content-type'] != 'application/json;charset=UTF-8':
+		raise Exception
+	data = request.json()
+	if data['resultCount'] == 0:
+		print("No result for stop name {}".format(name))
+	elif data['resultCount'] > 1:
+		print("More than one result for stop name {}:".format(name))
+		print("ID\tName")
+		for elem in data['resultList']:
+			print("{}\t{}".format(elem['stopPointId'], elem['stopPointName']))
+	else:
+		print("ID\tName")
+		print("{}\t{}".format(data['resultList'][0]['stopPointId'], data['resultList'][0]['stopPointName']))
+
+get_stoppoint(sys.argv[1])
+
+exit(0)
 if len(sys.argv) == 1 and defaultstop == 0:
 	print(usage.format(__file__))
 	exit(0)
