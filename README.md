@@ -11,5 +11,12 @@ London](http://www.tfl.gov.uk/cdn/static/cms/documents/tfl-live-bus-and-river-bu
 nimmt, hat man eine ganz gute Anleitung, was man mit so einer
 URA-Schnittstelle anfangen kann.
 
-Außerdem existieren noch Schnittstellen für das Routing und die Suche nach
-Haltestellen. Wird in diesem Branch gebaut werden.
+Da Schnittstellen für Haltestellenechtzeitdaten, Haltestellensuche und
+Routing existieren, nutze ich die hier auch.
+
+## Benutzung
+`./main [StopID] [BusIDs]` macht Echtzeitinformationen zur Haltestelle. Als
+StopID funktionieren sowohl Haltestellennamen als auch die numerischen IDs.
+
+`./main [StartID] [StopID]` macht Routing vom Start zum Stop. Für die IDs
+gilt das gleiche wie bei den Echtzeitinformationen.
