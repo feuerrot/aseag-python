@@ -154,7 +154,9 @@ def output(data):
 			try:
 				print("========")# Von {} nach {}".format(elem['startLocation']['stopPointName'], elem['endLocation']['stopPointName']))
 				for connection in elem['elementList']:
-					if connection['modalType'] == "bus":
+					if connection["type"] == "LineChange":
+						print("Bus wechselt Linie")
+					elif connection['modalType'] == "bus":
 						print("{} ab {:<30}{:>3} {}".format(
 							unix_epoch_to_time(
 								connection['start']['aimedArrivalInUnixEpochMillis'] or
@@ -192,6 +194,7 @@ def output(data):
 					print()
 			except KeyError as e:
 				print(e)
+				print(connection)
 	else:
 		print("Fehler: Weniger als 1 oder mehr als 2 HaltestellenIDs")
 		exit(1)
