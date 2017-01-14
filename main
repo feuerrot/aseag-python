@@ -155,11 +155,40 @@ def output(data):
 				print("========")# Von {} nach {}".format(elem['startLocation']['stopPointName'], elem['endLocation']['stopPointName']))
 				for connection in elem['elementList']:
 					if connection['modalType'] == "bus":
-						print("{} ab {:<30}{:>3} {}".format(unix_epoch_to_time(connection['start']['aimedDepartureInUnixEpochMillis']), connection['start']['location']['stopPointName'], connection['lineName'], connection['destinationName']))
-						print("{} an {}".format(unix_epoch_to_time(connection['end']['aimedDepartureInUnixEpochMillis']), connection['end']['location']['stopPointName']))
+						print("{} ab {:<30}{:>3} {}".format(
+							unix_epoch_to_time(
+								connection['start']['aimedArrivalInUnixEpochMillis'] or
+								connection['start']['estimatedArrivalInUnixEpochMillis'] or
+								connection['start']['scheduledArrivalInUnixEpochMillis']
+							), 
+							connection['start']['location']['stopPointName'], 
+							connection['lineName'], connection['destinationName'])
+						)
+						print("{} an {}".format(
+							unix_epoch_to_time(
+								connection['end']['aimedArrivalInUnixEpochMillis']	or 
+								connection['end']['estimatedArrivalInUnixEpochMillis'] or
+								connection['end']['scheduledArrivalInUnixEpochMillis']
+							),
+							connection['end']['location']['stopPointName'])
+						)
 					elif connection['modalType'] == "walk":
-						print("{} ab {:<30}    laufen".format(unix_epoch_to_time(connection['start']['aimedDepartureInUnixEpochMillis']), connection['start']['location']['stopPointName']))
-						print("{} an {}".format(unix_epoch_to_time(connection['end']['aimedDepartureInUnixEpochMillis']), connection['end']['location']['stopPointName']))
+						print("{} ab {:<30} laufen".format(
+							unix_epoch_to_time(
+								connection['start']['aimedArrivalInUnixEpochMillis'] or
+								connection['start']['estimatedArrivalInUnixEpochMillis'] or
+								connection['start']['scheduledArrivalInUnixEpochMillis']
+							),
+							connection['start']['location']['stopPointName'])
+						)
+						print("{} an {}".format(
+							unix_epoch_to_time(
+								connection['end']['aimedArrivalInUnixEpochMillis'] or 
+								connection['end']['estimatedArrivalInUnixEpochMillis'] or
+								connection['end']['scheduledArrivalInUnixEpochMillis']
+							), 
+							connection['end']['location']['stopPointName'])
+						)
 					print()
 			except KeyError as e:
 				print(e)
