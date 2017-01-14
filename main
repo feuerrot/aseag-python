@@ -3,18 +3,40 @@ import datetime
 import sys
 import os
 import requests
+import json
 
 DEBUG=False
 defaultstop = 100636
 
-baseurl  = "http://ivu.aseag.de/interfaces/ura/{}"
-url_l    = "location"
-url_j    = "journey"
-usage    = 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
-infotext = "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
-empty    = "Das Problem an dem System, ja, ist das System, ja!"
+baseurl		= "http://ivu.aseag.de/interfaces/ura/{}"
+url_l		= "location"
+url_j		= "journey"
+url_i		= "instant_V1"
+returnlist	= "StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
+usage		= 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
+infotext	= "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 
-totime   = 0
+totime = 0
+
+if len(sys.argv) == 1 and defaultstop == 0:
+	print(usage.format(__file__))
+	exit(0)
+
+def debug(text):
+	if DEBUG == True:
+		print(text)
+
+def unix_epoch_to_datetime(epoch_ms):
+	return datetime.datetime.fromtimestamp(epoch_ms * (10**(-3)))
+
+def unix_epoch_to_date(epoch_ms):
+	return unix_epoch_to_datetime(epoch_ms).strftime('%Y-%m-%d %H:%M:%S')
+
+def unix_epoch_to_time(epoch_ms):
+	return unix_epoch_to_datetime(epoch_ms).strftime('%H:%M:%S')
+
+def unix_epoch_from_now():
+	return int(datetime.datetime.now().timestamp() * 1000)
 
 def get_stoppoint(name):
 	parameter = {'searchString': name, 'maxResults': 10, 'searchTypes': 'STOPPOINT'}
@@ -25,74 +47,69 @@ def get_stoppoint(name):
 		raise Exception
 	data = request.json()
 	if data['resultCount'] == 0:
-		print("No result for stop name {}".format(name))
+		debug("No result for stop name {}".format(name))
+		return {}
 	elif data['resultCount'] > 1:
 		print("More than one result for stop name {}:".format(name))
 		print("ID\tName")
 		for elem in data['resultList']:
 			print("{}\t{}".format(elem['stopPointId'], elem['stopPointName']))
+		exit(0)
+		# this might be broken anyway
+		#return dict((elem['stopPointId'] = elem['stopPointName']) for elem in data['resultList'])
+
 	else:
-		print("ID\tName")
-		print("{}\t{}".format(data['resultList'][0]['stopPointId'], data['resultList'][0]['stopPointName']))
+		debug("ID\tName")
+		debug("{}\t{}".format(data['resultList'][0]['stopPointId'], data['resultList'][0]['stopPointName']))
+		return {data['resultList'][0]['stopPointId']: data['resultList'][0]['stopPointName']}
 
-get_stoppoint(sys.argv[1])
+def parsejson(data, encoding):
+	output = []
+	for line in data.splitlines():
+		linelist = json.loads(line)
+		if (linelist[0] == 1):
+			output.append((linelist[15],linelist[8],linelist[12]))
+	output.sort(key=lambda tup: tup[0])
+	return output
 
-exit(0)
-if len(sys.argv) == 1 and defaultstop == 0:
-	print(usage.format(__file__))
-	exit(0)
+# See: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+def deduplication(data):
+	jsondata = data
+	seen = set()
+	seen_add = seen.add
+	jsondata = [x for x in jsondata if not (x in seen or seen_add(x))]
+	return jsondata
 
-def tstodatetime(ts):
-	return datetime.datetime.fromtimestamp(ts*(10**(-3)))
-
-def tstodate(ts): #timestamp to date
-	return tstodatetime(ts).strftime('%Y-%m-%d %H:%M:%S')
-
-def tstotime(ts): #timestamp to time
-	return tstodatetime(ts).strftime('%H:%M:%S')
-
-def tsfilter(ts): # Todo: schöner machen
+def tsfilter(ts, totime): # Todo: schöner machen
 	if totime == 0:
-		return (tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5))
+		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5))
 	else:
-		return (tstodatetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)) and (tstodatetime(ts) <= datetime.datetime.now() + datetime.timedelta(minutes = totime))
+		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)) and (unix_epoch_to_datetime(ts) <= datetime.datetime.now() + datetime.timedelta(minutes = totime))
 
-def file2dict(fn): #file(name) to dict
-	rtn = dict()
-	with open(fn, 'r') as fh:
-		for line in fh:
-			(number, name) = line.split(' ', 1)
-			rtn[int(number)] = name.strip()
-	return rtn
+def get_stopdata(stop_point_id, lines):
+	parameter = {'ReturnList': returnlist, 'StopID': stop_point_id}
+	if lines:
+		parameter['LineID'] = ",".join(lines)
+	request = requests.get(baseurl.format(url_i), params = parameter)
+	if request.status_code != 200:
+		raise Exception
+	if request.headers['content-type'] != 'application/json;charset=UTF-8':
+		raise Exception
+	data = deduplication(parsejson(request.text, request.encoding))
+	return data
 
-def debug(text):
-	if DEBUG:
-		print(text)
-
-stops = file2dict(stopfile)
-
-def lookup_stop_by_name(name):
-	found = []
-	for elem in stops.items():
-		if DEBUG:
-			print(elem)
-			print(elem[1])
-		if name.lower() in elem[1].lower():
-			found.append(elem)
-	debug(found)
-	if len(found) == 1:
-		return found[0][0]
-	elif len(found) == 0:
-		print("{} is not a valid stop name".format(name))
-		exit(3)
-	else:
-		print("Found more than one match:")
-		for i in found:
-			print("{} {}".format(i[0], i[1]))
-		exit(4)
+def get_routedata(start, stop):
+	parameter = {'startStopId': start, 'endStopId': stop, 'departureTime': unix_epoch_from_now(), 'maxNumResults': 4}
+	request = requests.get(baseurl.format(url_j), params = parameter)
+	if request.status_code != 200:
+		raise Exception
+	if request.headers['content-type'] != 'application/json;charset=UTF-8':
+		raise Exception
+	data = request.json()
+	return data
 
 def parseargv(): #parses argv, returns StopID and LineID
-	query_stop = defaultstop
+	query_stop = []
 	query_ids  = []
 	argc = len(sys.argv)
 	if argc >  1:
@@ -103,10 +120,10 @@ def parseargv(): #parses argv, returns StopID and LineID
 				print(usage)
 				exit(0)
 			if (len(elem) == 6 and elem.isdigit()):
-				query_stop = int(elem)
+				query_stop.append(int(elem))
 			elif (1 <= len(elem) <= 3 and elem.isdigit()):
 				query_ids.append(elem)
-			elif elem == 'debug':
+			elif elem.lower() == 'debug':
 				global DEBUG
 				DEBUG=True
 			elif elem[0] == '+':
@@ -116,80 +133,43 @@ def parseargv(): #parses argv, returns StopID and LineID
 				except:
 					pass
 			elif elem.isprintable():
-				query_stop = lookup_stop_by_name(elem)
+				query_stop.append(get_stoppoint(elem).keys())
 			else:
 				print("Unknown parameter {!r}".format(elem))
 	query_ids.sort(key=int)
 	return (query_stop, query_ids)
 
-def getjson(data):
-	(stop, ids) = data
-	stop_filter = filter_s.format(stop)
-	if (ids == []):
-		line_filter = ""
+def output(data):
+	(haltid, ids) = data
+	if len(haltid) == 1:
+		debug("Haltestellenabfrage")
+		output = get_stopdata(haltid[0], ids)
+		for line in output:
+			if tsfilter(line[0], totime):
+				print("{} {:>3} {}".format(unix_epoch_to_time(line[0]), line[1], line[2]))
+	elif len(haltid) == 2:
+		debug("Routenabfrage")
+		output = get_routedata(haltid[0], haltid[1])
+		for elem in output['resultList']:
+			try:
+				print("========")# Von {} nach {}".format(elem['startLocation']['stopPointName'], elem['endLocation']['stopPointName']))
+				for connection in elem['elementList']:
+					if connection['modalType'] == "bus":
+						print("{} ab {:<30}{:>3} {}".format(unix_epoch_to_time(connection['start']['aimedDepartureInUnixEpochMillis']), connection['start']['location']['stopPointName'], connection['lineName'], connection['destinationName']))
+						print("{} an {}".format(unix_epoch_to_time(connection['end']['aimedDepartureInUnixEpochMillis']), connection['end']['location']['stopPointName']))
+					elif connection['modalType'] == "walk":
+						print("{} ab {:<30}    laufen".format(unix_epoch_to_time(connection['start']['aimedDepartureInUnixEpochMillis']), connection['start']['location']['stopPointName']))
+						print("{} an {}".format(unix_epoch_to_time(connection['end']['aimedDepartureInUnixEpochMillis']), connection['end']['location']['stopPointName']))
+					print()
+			except KeyError as e:
+				print(e)
 	else:
-		line_filter = filter_l.format(",".join(ids))
-	url = "{}{}{}{}".format(url_i,filter,stop_filter,line_filter)
-	debug("URL: {}{}".format(baseurl, url))
-
-	connection = http.client.HTTPConnection(baseurl)
-	try:
-		connection.request("GET", url)
-	except socket.gaierror:
-		print("Can't connect to {}!".format(url))
+		print("Fehler: Weniger als 1 oder mehr als 2 HaltestellenIDs")
 		exit(1)
-
-	response = connection.getresponse()
-	encoding = response.headers.get_content_charset()
-	jsondata = response.read().splitlines()
-
-	return (jsondata, encoding)
-
-def parsejson(data):
-	(jsondata, encoding) = data
-	output = []
-	for line in jsondata:
-		linelist = json.loads(line.decode(encoding))
-		if (linelist[0] == 1):
-			output.append((linelist[15],linelist[8],linelist[12]))
-	output.sort(key=lambda tup: tup[0])
-	return output
-
-# See: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
-def deduplication(data):
-	(jsondata, encoding) = data
-	seen = set()
-	seen_add = seen.add
-	jsondata = [x for x in jsondata if not (x in seen or seen_add(x))]
-	return (jsondata, encoding)
-
-def info(data):
-	(stop, ids) = data
-	try:
-		halt = stops[stop].strip()
-	except:
-		print("Error: Invalid StopID")
-		exit(1)
-	haltid = stop
 	linien = " ".join(ids)
-	out = infotext.format(halt, haltid, linien)
-	debug(out)
 
 data = parseargv()
 
 debug('=== Start')
-info(data)
+output(data)
 
-debug('=== Get JSON')
-jsondata = deduplication(getjson(data))
-
-debug('=== Parse JSON')
-output = parsejson(jsondata)
-
-debug('=== Output')
-if output == []:
-	debug(empty)
-	exit(2)
-for line in output:
-	if tsfilter(line[0]):
-		print("{} {:>3} {}".format(tstotime(line[0]), line[1], line[2]))
