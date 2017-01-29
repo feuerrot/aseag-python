@@ -4,13 +4,14 @@ import sys
 import os
 import requests
 import json
+import time
 
 DEBUG=False
-defaultstop = 100636
+defaultstop = 100111
+maxconn = 4 # led-panel hat maximal Platz für 4 Verbindungen
 
 baseurl		= "http://ivu.aseag.de/interfaces/ura/{}"
 url_l		= "location"
-url_j		= "journey"
 url_i		= "instant_V2"
 returnlist	= "StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
 usage		= 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
@@ -37,6 +38,13 @@ def unix_epoch_to_time(epoch_ms):
 
 def unix_epoch_from_now():
 	return int(datetime.datetime.now().timestamp() * 1000)
+
+def datetime_timediff(dt):
+	diff = dt - datetime.datetime.now()
+	if diff.minutes > 99:
+		return '++'
+	else:
+		return diff.minutes
 
 def get_stoppoint(name):
 	parameter = {'searchString': name, 'maxResults': 10, 'searchTypes': 'STOPPOINT'}
@@ -86,10 +94,8 @@ def tsfilter(ts, totime): # Todo: schöner machen
 	else:
 		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)) and (unix_epoch_to_datetime(ts) <= datetime.datetime.now() + datetime.timedelta(minutes = totime))
 
-def get_stopdata(stop_point_id, lines):
+def get_stopdata(stop_point_id):
 	parameter = {'ReturnList': returnlist, 'StopID': stop_point_id}
-	if lines:
-		parameter['LineID'] = ",".join(lines)
 	request = requests.get(baseurl.format(url_i), params = parameter)
 	if request.status_code != 200:
 		raise Exception
@@ -98,110 +104,29 @@ def get_stopdata(stop_point_id, lines):
 	data = deduplication(parsejson(request.text, request.encoding))
 	return data
 
-def get_routedata(start, stop):
-	parameter = {'startStopId': start, 'endStopId': stop, 'departureTime': unix_epoch_from_now(), 'maxNumResults': 4}
-	request = requests.get(baseurl.format(url_j), params = parameter)
-	if request.status_code != 200:
-		raise Exception
-	if request.headers['content-type'] != 'application/json;charset=UTF-8':
-		raise Exception
-	data = request.json()
-	return data
-
 def parseargv(): #parses argv, returns StopID and LineID
-	query_stop = []
-	query_ids  = []
+	query_stop = [defaultstop]
 	argc = len(sys.argv)
-	if argc >  1:
-		for elem in sys.argv:
-			if (elem == __file__):
-				continue
-			if ('help' in elem or elem == '-h'):
-				print(usage)
-				exit(0)
-			if (len(elem) == 6 and elem.isdigit()):
-				query_stop.append(int(elem))
-			elif (1 <= len(elem) <= 3 and elem.isdigit()):
-				query_ids.append(elem)
-			elif elem.lower() == 'debug':
-				global DEBUG
-				DEBUG=True
-			elif elem[0] == '+':
-				global totime
-				try:
-					totime = int(elem[1:])
-				except:
-					pass
-			elif elem.isprintable():
-				query_stop.append(get_stoppoint(elem).keys())
-			else:
-				print("Unknown parameter {!r}".format(elem))
-	query_ids.sort(key=int)
 	return (query_stop, query_ids)
 
-def output(data):
-	(haltid, ids) = data
-	if len(haltid) == 1:
-		debug("Haltestellenabfrage")
-		output = get_stopdata(haltid[0], ids)
-		for line in output:
-			if tsfilter(line[0], totime):
-				print("{} {:>3} {}".format(unix_epoch_to_time(line[0]), line[1], line[2]))
-	elif len(haltid) == 2:
-		debug("Routenabfrage")
-		output = get_routedata(haltid[0], haltid[1])
-		for elem in output['resultList']:
-			try:
-				print("========")# Von {} nach {}".format(elem['startLocation']['stopPointName'], elem['endLocation']['stopPointName']))
-				for connection in elem['elementList']:
-					if connection["type"] == "LineChange":
-						print("Bus wechselt Linie")
-					elif connection['modalType'] == "bus":
-						print("{} ab {:<30}{:>3} {}".format(
-							unix_epoch_to_time(
-								connection['start']['aimedArrivalInUnixEpochMillis'] or
-								connection['start']['estimatedArrivalInUnixEpochMillis'] or
-								connection['start']['scheduledArrivalInUnixEpochMillis']
-							), 
-							connection['start']['location']['stopPointName'], 
-							connection['lineName'], connection['destinationName'])
-						)
-						print("{} an {}".format(
-							unix_epoch_to_time(
-								connection['end']['aimedArrivalInUnixEpochMillis']	or 
-								connection['end']['estimatedArrivalInUnixEpochMillis'] or
-								connection['end']['scheduledArrivalInUnixEpochMillis']
-							),
-							connection['end']['location']['stopPointName'])
-						)
-					elif connection['modalType'] == "walk":
-						print("{} ab {:<30} laufen".format(
-							unix_epoch_to_time(
-								connection['start']['aimedArrivalInUnixEpochMillis'] or
-								connection['start']['estimatedArrivalInUnixEpochMillis'] or
-								connection['start']['scheduledArrivalInUnixEpochMillis']
-							),
-							connection['start']['location']['stopPointName'])
-						)
-						print("{} an {}".format(
-							unix_epoch_to_time(
-								connection['end']['aimedArrivalInUnixEpochMillis'] or 
-								connection['end']['estimatedArrivalInUnixEpochMillis'] or
-								connection['end']['scheduledArrivalInUnixEpochMillis']
-							), 
-							connection['end']['location']['stopPointName'])
-						)
-					print()
-			except KeyError as e:
-				print(e)
-				print(connection)
-	else:
-		print("Fehler: Weniger als 1 oder mehr als 2 HaltestellenIDs")
-		exit(1)
-	linien = " ".join(ids)
+def output():
+	output = get_stopdata(defaultstop)
+	counter = 0
+	for line in output:
+		if counter == maxconn:
+			break
+		if tsfilter(line[0], totime):
+			counter += 1
+			print("{:>2} {:>3} {}".format(unix_epoch_to_time(line[0]), line[1], line[2]))
+	while counter < maxconn:
+		print()
+		counter -= 1
 
-data = parseargv()
+while True:
+	#try:
+	output()
+	#except:
+	#	pass
+	time.sleep(20)
 
-debug('=== Start')
-output(data)
 
