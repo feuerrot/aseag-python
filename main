@@ -5,11 +5,13 @@ import os
 import requests
 import json
 import time
+import sys
 
 DEBUG=False
 defaultstop = 100111
 maxconn = 4 # led-panel hat maximal Platz für 4 Verbindungen
 
+start = 1
 baseurl		= "http://ivu.aseag.de/interfaces/ura/{}"
 url_l		= "location"
 url_i		= "instant_V2"
@@ -110,23 +112,29 @@ def parseargv(): #parses argv, returns StopID and LineID
 	return (query_stop, query_ids)
 
 def output():
+	global start
 	output = get_stopdata(defaultstop)
 	counter = 0
+	if not start:
+		sys.stdout.write("\n")
+	start = 0
 	for line in output:
 		if counter == maxconn:
 			break
 		if tsfilter(line[0], totime):
 			counter += 1
-			print("{:>2} {:>3} {}".format(datetime_timediff(unix_epoch_to_datetime(line[0])), line[1], line[2]))
+			sys.stdout.write("{:>2} {:>3} {}".format(datetime_timediff(unix_epoch_to_datetime(line[0])), line[1], line[2]))
+			sys.stdout.write("\n")
+			sys.stdout.flush()
 	while counter < maxconn:
 		print()
 		counter -= 1
 
 while True:
-	#try:
-	output()
-	#except:
-	#	pass
+	try:
+		output()
+	except:
+		pass
 	time.sleep(20)
 
 
