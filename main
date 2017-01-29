@@ -41,10 +41,10 @@ def unix_epoch_from_now():
 
 def datetime_timediff(dt):
 	diff = dt - datetime.datetime.now()
-	if diff.minutes > 99:
+	if diff.seconds//60 > 99:
 		return '++'
 	else:
-		return diff.minutes
+		return diff.seconds//60
 
 def get_stoppoint(name):
 	parameter = {'searchString': name, 'maxResults': 10, 'searchTypes': 'STOPPOINT'}
@@ -117,7 +117,7 @@ def output():
 			break
 		if tsfilter(line[0], totime):
 			counter += 1
-			print("{:>2} {:>3} {}".format(unix_epoch_to_time(line[0]), line[1], line[2]))
+			print("{:>2} {:>3} {}".format(datetime_timediff(unix_epoch_to_datetime(line[0])), line[1], line[2]))
 	while counter < maxconn:
 		print()
 		counter -= 1
