@@ -42,7 +42,7 @@ def unix_epoch_from_now():
 	return int(datetime.datetime.now().timestamp() * 1000)
 
 def datetime_timediff(dt):
-	diff = dt - datetime.datetime.now()
+	diff = max(dt - datetime.datetime.now(), datetime.datetime.now() - dt) # bugfix against weird underflow bug
 	if diff.seconds//60 > 99:
 		return '++'
 	else:
