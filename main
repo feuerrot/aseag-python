@@ -10,14 +10,14 @@ import sys
 DEBUG=False
 defaultstop = 100111
 maxconn = 4 # led-panel hat maximal Platz für 4 Verbindungen
+defaultvia = 100000 # show only via Aachen Bushof
 
 start = 1
 baseurl		= "http://ivu.aseag.de/interfaces/ura/{}"
 url_l		= "location"
 url_i		= "instant_V2"
 returnlist	= "StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,LineID,LineName,DirectionID,DestinationName,DestinationText,VehicleId,TripId,EstimatedTime,BaseVersion"
-usage		= 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
-infotext	= "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
+usage		= "Usage: don't"
 
 totime = 0
 
@@ -77,10 +77,27 @@ def parsejson(data, encoding):
 	output = []
 	for line in data.splitlines():
 		linelist = json.loads(line)
-		if (linelist[0] == 1):
+		if (linelist[0] == 1 and include_trip(linelist[13])):
 			output.append((linelist[14],linelist[8],linelist[11]))
 	output.sort(key=lambda tup: tup[0])
 	return output
+
+def parsetrip(data, encoding):
+	output = []
+	for line in data.splitlines():
+		linelist = json.loads(line)
+		if (linelist[0] == 1 and (int(linelist[2]) == defaultstop or int(linelist[2]) == defaultvia)):
+			output.append((linelist[14],linelist[2]))
+	output.sort(key=lambda tup: tup[0])
+	if len(output) != 2:
+		return False
+	if int(output[0][1]) == defaultstop and int(output[1][1]) == defaultvia:
+		return True
+	elif int(output[1][1]) == defaultstop and int(output[0][1]) == defaultvia:
+		return False
+	else:
+		# lol undefined behaviour
+		raise Exception
 
 # See: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 def deduplication(data):
@@ -92,7 +109,7 @@ def deduplication(data):
 
 def tsfilter(ts, totime): # Todo: schöner machen
 	if totime == 0:
-		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5))
+		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() + datetime.timedelta(minutes = 3))
 	else:
 		return (unix_epoch_to_datetime(ts) >= datetime.datetime.now() - datetime.timedelta(minutes = 5)) and (unix_epoch_to_datetime(ts) <= datetime.datetime.now() + datetime.timedelta(minutes = totime))
 
@@ -105,6 +122,17 @@ def get_stopdata(stop_point_id):
 		raise Exception
 	data = deduplication(parsejson(request.text, request.encoding))
 	return data
+
+# TODO: Get the destination's stop point data and compare trip ids instead
+def include_trip(tripid):
+	parameter = {'ReturnList': returnlist, 'TripID': tripid}
+	request = requests.get(baseurl.format(url_i), params = parameter)
+	if request.status_code != 200:
+		raise Exception
+	if request.headers['content-type'] != 'application/json;charset=UTF-8':
+		raise Exception
+	include = parsetrip(request.text, request.encoding)
+	return include
 
 def parseargv(): #parses argv, returns StopID and LineID
 	query_stop = [defaultstop]
