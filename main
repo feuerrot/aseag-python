@@ -15,7 +15,7 @@ start = 1
 baseurl		= "http://ivu.aseag.de/interfaces/ura/{}"
 url_l		= "location"
 url_i		= "instant_V2"
-returnlist	= "StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,VisitNumber,TripID,VehicleID,LineID,LineName,DirectionID,DestinationName,DestinationText,EstimatedTime,BaseVersion"
+returnlist	= "StopPointName,StopID,StopPointState,StopPointIndicator,Latitude,Longitude,LineID,LineName,DirectionID,DestinationName,DestinationText,VehicleId,TripId,EstimatedTime,BaseVersion"
 usage		= 'Usage: ./main [StopID/StopName] [BusID] ([BusID]…) +[MaxWait]'
 infotext	= "Haltestelle:    {}\nHaltestellenID: {}\nLinienfilter:   {}"
 
@@ -78,7 +78,7 @@ def parsejson(data, encoding):
 	for line in data.splitlines():
 		linelist = json.loads(line)
 		if (linelist[0] == 1):
-			output.append((linelist[15],linelist[8],linelist[12]))
+			output.append((linelist[14],linelist[8],linelist[11]))
 	output.sort(key=lambda tup: tup[0])
 	return output
 
