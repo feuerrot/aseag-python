@@ -100,9 +100,9 @@ def get_stopdata(stop_point_id, lines):
 
 def get_routedata(start, stop):
 	parameter = {'startStopId': start, 'endStopId': stop, 'departureTime': unix_epoch_from_now(), 'maxNumResults': 4}
+	if totime:
+		parameter['maxNumResults'] = totime
 	request = requests.get(baseurl.format(url_j), params = parameter)
-	if request.status_code != 200:
-		raise Exception
 	if request.headers['content-type'] != 'application/json;charset=UTF-8':
 		raise Exception
 	data = request.json()
